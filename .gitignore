@@ -1,0 +1,10 @@
+_archiv/
+image.png
+assets/_base.jpg
+generate*.mjs
+assets/anim/*_concat.mp4
+assets/anim/*--d3.mp4
+assets/anim/*--d6.mp4
+assets/anim/*--d13.mp4
+assets/anim/*--d18.mp4
+.DS_Store

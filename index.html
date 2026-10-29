@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>American Gothic · reagierendes Porträt</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Goldrahmen mit geschichteter Bühne: Hintergrund + zwei Figuren-Ebenen -->
+  <div class="frame">
+    <div class="stage" id="stage">
+      <img class="bg" id="bg" src="assets/bg.jpg" alt="" />
+      <!-- Figuren: Green-Screen-PNGs werden per Canvas gekeyt und hier gezeichnet -->
+      <canvas class="figure frau" id="frau-canvas"></canvas>
+      <canvas class="figure mann" id="mann-canvas"></canvas>
+      <div class="vignette"></div>
+    </div>
+  </div>
+
+  <!-- Startknopf (Webcam braucht eine Nutzer-Geste) -->
+  <div class="start" id="start">
+    <button id="startBtn">▶ Porträt erwecken</button>
+    <p class="hint">Braucht Kamera-Freigabe. Über http(s)/localhost, nicht als Datei.
+    Taste <b>d</b> = Debug, <b>p</b> = Positionen justieren.</p>
+  </div>
+
+  <div class="status" id="status" hidden></div>
+
+  <video id="cam" playsinline muted hidden></video>
+  <audio id="hmpf" src="assets/hmpf.mp3" preload="auto"></audio>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+:root {
+  --gold: #b8912f;
+  --gold-light: #e8c766;
+  --dark: #0a0806;
+  /* Figuren-Position/Größe (mit Taste p + Pfeiltasten justierbar) */
+  --frau-x: 1%;  --frau-w: 56%; --frau-y: 0px;
+  --mann-x: 0%;  --mann-w: 58%; --mann-y: 0px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: radial-gradient(ellipse at center, #141008 0%, #000 80%);
+  overflow: hidden;
+  font-family: "Georgia", "Times New Roman", serif;
+  color: #c9b48a;
+}
+
+/* ---- Goldrahmen ---- */
+.frame {
+  position: absolute; inset: 0; margin: auto;
+  width: min(92vmin, 92vw);
+  aspect-ratio: 3 / 4;
+  padding: clamp(14px, 3vmin, 40px);
+  background: linear-gradient(135deg, var(--gold-light), var(--gold) 40%, #6b5219 60%, var(--gold) 80%, var(--gold-light));
+  border-radius: 6px;
+  box-shadow: 0 0 0 3px #3a2c0d, 0 30px 80px rgba(0,0,0,0.9), inset 0 0 18px rgba(0,0,0,0.6);
+}
+
+/* ---- Bühne: Hintergrund + Figuren ---- */
+.stage { position: relative; width: 100%; height: 100%; background: #12100c; overflow: hidden; }
+
+/* leicht nach Ölgemälde, gilt für Hintergrund und Figuren gleich -> blendet zusammen */
+.bg, .figure {
+  filter: sepia(0.26) saturate(0.82) contrast(1.04) brightness(0.92);
+}
+
+.bg {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+
+.figure {
+  position: absolute;
+  bottom: 0;
+  height: auto;            /* Canvas ist 1:1, Höhe folgt der Breite */
+  pointer-events: none;
+}
+.figure.frau { left: var(--frau-x);  width: var(--frau-w); transform: translateY(var(--frau-y)); z-index: 1; }
+.figure.mann { right: var(--mann-x); width: var(--mann-w); transform: translateY(var(--mann-y)); z-index: 2; }
+
+.vignette {
+  position: absolute; inset: 0; pointer-events: none;
+  box-shadow: inset 0 0 120px 30px rgba(0,0,0,0.85);
+  z-index: 3;
+}
+
+/* ---- Startknopf ---- */
+.start {
+  position: absolute; inset: 0; z-index: 10;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  background: rgba(0,0,0,0.82);
+}
+.start.hidden { display: none; }
+#startBtn {
+  font-family: inherit; font-size: clamp(18px, 4vmin, 32px);
+  padding: 0.6em 1.4em; color: var(--dark);
+  background: linear-gradient(var(--gold-light), var(--gold));
+  border: 2px solid #6b5219; border-radius: 4px; cursor: pointer; letter-spacing: 0.05em;
+}
+#startBtn:hover { filter: brightness(1.1); }
+.hint { font-size: 14px; opacity: 0.6; max-width: 36ch; text-align: center; }
+
+/* ---- Debug ---- */
+.status {
+  position: absolute; left: 8px; bottom: 8px; z-index: 20;
+  font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: #7fd08a;
+  background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 4px; white-space: pre;
+}
