@@ -99,13 +99,17 @@ function endReact(f) {
 // erkannte Grimasse (Priorität) aus Blendshapes
 function grimace(b) { for (const e of EMOTES) if (e.score(b) > e.th) return e.name; return null; }
 
-// Gesicht -> Figur (links=frau, rechts=mann) und Grimasse mit Hysterese auslösen
-function assign(perFace) {
+// Gesicht -> Figur (links=frau, rechts=mann)
+function mapFaces(perFace) {
   const left = FIGS.find(f => f.side === 'L'), right = FIGS.find(f => f.side === 'R');
   const sorted = [...perFace].sort((a, b) => a.x - b.x);
   const map = new Map();
   if (sorted.length >= 2) { map.set(left, sorted[0]); map.set(right, sorted[1]); }
   else if (sorted.length === 1) { map.set(sorted[0].x < 0.5 ? left : right, sorted[0]); }
+  return map;
+}
+// Grimasse mit Hysterese auslösen
+function trigger(map) {
   for (const f of FIGS) {
     const face = map.get(f);
     const g = face ? face.grimace : null;
@@ -115,6 +119,19 @@ function assign(perFace) {
 }
 
 function debug(t) { if (!statusEl.hidden) statusEl.textContent = t; }
+
+// Debug/Hilfe-Text: Legende + Live-Werte pro Figur (* = ueber Schwelle, loest aus)
+const LEGEND = 'GRIMASSE -> REAKTION:  Zunge raus = d3   Mund weit auf = d6   Brauen hoch = d13   Laecheln = d0\n(links=Frau, rechts=Mann;  * = ueber Ausloese-Schwelle)';
+function debugText(map) {
+  const lines = FIGS.map(f => {
+    const face = map.get(f);
+    if (!face) return `${f.who.toUpperCase().padEnd(5)} [${f.state}]  (kein Gesicht erkannt)`;
+    const s = face.scores;
+    const vals = EMOTES.map(e => `${e.name}:${s[e.name].toFixed(2)}${s[e.name] > e.th ? '*' : ' '}`).join('  ');
+    return `${f.who.toUpperCase().padEnd(5)} [${f.state}]  aktiv: ${face.grimace ?? '-'}\n       ${vals}`;
+  });
+  return LEGEND + '\n' + lines.join('\n');
+}
 
 // ---- Modus 1: MediaPipe (2 Gesichter + Grimassen) ----
 async function tryMediaPipe() {
@@ -131,10 +148,12 @@ async function tryMediaPipe() {
       const perFace = (res.faceLandmarks ?? []).map((landmarks, i) => {
         const b = {}; for (const c of (res.faceBlendshapes?.[i]?.categories ?? [])) b[c.categoryName] = c.score;
         const x = landmarks.reduce((s, p) => s + p.x, 0) / landmarks.length;
-        return { x, grimace: grimace(b) };
+        const scores = {}; for (const e of EMOTES) scores[e.name] = e.score(b);
+        return { x, grimace: grimace(b), scores };
       });
-      assign(perFace);
-      debug(`${perFace.length} Gesicht(er) | frau:${FIGS[0].state} mann:${FIGS[1].state}`);
+      const map = mapFaces(perFace);
+      trigger(map);
+      debug(debugText(map));
     }
     requestAnimationFrame(loop);
   };
