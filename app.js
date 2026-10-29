@@ -36,7 +36,7 @@ const PEOPLE = ['frau', 'mann', 'tammy'];
 const SETTINGS = (() => { try { return JSON.parse(localStorage.getItem('gothic-settings') || '{}'); } catch { return {}; } })();
 if (PEOPLE.includes(SETTINGS.left)) FIGS[0].who = SETTINGS.left;
 if (PEOPLE.includes(SETTINGS.right)) FIGS[1].who = SETTINGS.right;
-const pos = SETTINGS.pos || { frau: { x: 1, w: 48, y: 0 }, mann: { x: 0, w: 58, y: 0 } };
+const pos = SETTINGS.pos || { frau: { x: 1, w: 52, y: -70 }, mann: { x: 0, w: 58, y: 0 } };
 function saveSettings() { try { localStorage.setItem('gothic-settings', JSON.stringify({ left: FIGS[0].who, right: FIGS[1].who, pos })); } catch {} }
 
 // ---- Chroma-Key: Grün -> transparent, mit Despill ----
