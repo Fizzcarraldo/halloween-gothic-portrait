@@ -120,17 +120,22 @@ function trigger(map) {
 
 function debug(t) { if (!statusEl.hidden) statusEl.textContent = t; }
 
-// Debug/Hilfe-Text: Legende + Live-Werte pro Figur (* = ueber Schwelle, loest aus)
-const LEGEND = 'GRIMASSE -> REAKTION:  Zunge raus = d3   Mund weit auf = d6   Brauen hoch = d13   Laecheln = d0\n(links=Frau, rechts=Mann;  * = ueber Ausloese-Schwelle)';
+// Debug/Hilfe-Text: pro Figur erkannte Grimasse + jeder Emote-Wert in % vs. Schwelle.
+// Zum Kalibrieren: die th-Werte oben in EMOTES anpassen (0.25 = 25%).
 function debugText(map) {
   const lines = FIGS.map(f => {
     const face = map.get(f);
-    if (!face) return `${f.who.toUpperCase().padEnd(5)} [${f.state}]  (kein Gesicht erkannt)`;
-    const s = face.scores;
-    const vals = EMOTES.map(e => `${e.name}:${s[e.name].toFixed(2)}${s[e.name] > e.th ? '*' : ' '}`).join('  ');
-    return `${f.who.toUpperCase().padEnd(5)} [${f.state}]  aktiv: ${face.grimace ?? '-'}\n       ${vals}`;
+    const head = `${f.who.toUpperCase().padEnd(5)}[${f.state}]  erkannt: ${face && face.grimace ? face.grimace.toUpperCase() : '-'}`;
+    if (!face) return head + '  (kein Gesicht)';
+    const rows = EMOTES.map(e => {
+      const v = Math.round((face.scores[e.name] ?? 0) * 100);
+      const th = Math.round(e.th * 100);
+      const mark = face.grimace === e.name ? '  <<< TRIGGER' : (v > th ? '  > ueber Schwelle' : '');
+      return `   ${e.name.padEnd(7)} ${String(v).padStart(3)}%   (Schwelle ${String(th).padStart(3)}%)${mark}`;
+    });
+    return head + '\n' + rows.join('\n');
   });
-  return LEGEND + '\n' + lines.join('\n');
+  return 'GRIMASSE -> CLIP:  Zunge=d3  MundAuf=d6  Brauen=d13  Laecheln=d0   (links=Frau · rechts=Mann)\n' + lines.join('\n');
 }
 
 // ---- Modus 1: MediaPipe (2 Gesichter + Grimassen) ----
