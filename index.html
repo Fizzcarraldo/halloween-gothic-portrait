@@ -27,6 +27,14 @@
 
   <div class="status" id="status" hidden></div>
 
+  <!-- Einstellungen: Personen-Auswahl + Positionieren -->
+  <button class="gear" id="gear" title="Einstellungen">⚙</button>
+  <div class="panel" id="panel" hidden>
+    <label>Links <select id="sel-left"></select></label>
+    <label>Rechts <select id="sel-right"></select></label>
+    <label class="chk"><input type="checkbox" id="edit-chk" /> Positionieren (Figur ziehen · Mausrad = Größe)</label>
+  </div>
+
   <video id="cam" playsinline muted hidden></video>
   <audio id="hmpf" src="assets/hmpf.mp3" preload="auto"></audio>
 

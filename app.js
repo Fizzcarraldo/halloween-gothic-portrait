@@ -1,39 +1,43 @@
 // American Gothic - Ebenen-Compositing mit mehreren Emotes.
 // Hintergrund (bg.jpg) + zwei Figuren (Green-Screen-Stills/Clips, per Canvas gekeyt).
 // Idle = Standbild. Je nach Grimasse des Betrachters spielt die Figur einen anderen Clip.
-// Linkes Gesicht steuert die Frau, rechtes den Mann.
+// Personen wählbar (Dropdowns), Positionen per Drag & Drop (Einstellungen-Panel, Zahnrad).
 
 const startEl = document.getElementById('start');
 const startBtn = document.getElementById('startBtn');
 const statusEl = document.getElementById('status');
+const stage = document.getElementById('stage');
 const cam = document.getElementById('cam');
 const work = (() => { const c = document.createElement('canvas'); c.width = 160; c.height = 120; return c; })();
 const wctx = work.getContext('2d', { willReadFrequently: true });
 const hmpf = document.getElementById('hmpf');
 
 const CFG = {
-  framesTrigger: 4,    // so viele Grimassen-Frames am Stück -> Reaktion
-  cooldownMs: 3500,    // Pause nach einer Reaktion
-  motionTh: 16,        // Fallback-Bewegungsschwelle
-  maxReactMs: 2600,    // Reaktion nach dieser Zeit abschneiden (gegen zu lange Clips)
+  framesTrigger: 4, cooldownMs: 3500, motionTh: 16, maxReactMs: 2600,
 };
 
-// Grimasse -> Clip-Suffix (= Treiber-Bewegung). Reihenfolge = Priorität.
-// Die Bewegung ist generisch (d0/d3/...), nicht die Grimasse selbst nachgeahmt,
-// aber jede Grimasse löst eine eigene Belebung aus.
 const EMOTES = [
-  { name: 'wink',  suffix: 'd3',  th: 0.30, score: b => { const l = b.eyeBlinkLeft ?? 0, r = b.eyeBlinkRight ?? 0; return Math.max(l, r) > 0.5 ? Math.abs(l - r) : 0; } }, // Zwinkern
-  { name: 'kiss',  suffix: 'd6',  th: 0.45, score: b => b.mouthPucker ?? 0 },                               // Kussmund -> wilde Grimasse
-  { name: 'angry', suffix: 'angry', th: 0.40, score: b => ((b.browDownLeft ?? 0) + (b.browDownRight ?? 0)) / 2 }, // Boese -> eigenes angry-Video
-  { name: 'smile', suffix: 'd0',  th: 0.40, score: b => ((b.mouthSmileLeft ?? 0) + (b.mouthSmileRight ?? 0)) / 2 }, // awkward Laecheln
+  { name: 'wink',  suffix: 'd3',    th: 0.30, score: b => { const l = b.eyeBlinkLeft ?? 0, r = b.eyeBlinkRight ?? 0; return Math.max(l, r) > 0.5 ? Math.abs(l - r) : 0; } },
+  { name: 'kiss',  suffix: 'd6',    th: 0.45, score: b => b.mouthPucker ?? 0 },
+  { name: 'angry', suffix: 'angry', th: 0.40, score: b => ((b.browDownLeft ?? 0) + (b.browDownRight ?? 0)) / 2 },
+  { name: 'smile', suffix: 'd0',    th: 0.40, score: b => ((b.mouthSmileLeft ?? 0) + (b.mouthSmileRight ?? 0)) / 2 },
 ];
 
 // who bestimmt alle Assets: assets/<who>-stern.png + assets/anim/<who>-stern--<clip>.mp4
-// Person tauschen = nur 'who' aendern (frau | mann | tammy | ...).
 const FIGS = [
-  { who: 'tammy', side: 'L', canvas: document.getElementById('frau-canvas') },
-  { who: 'mann',  side: 'R', canvas: document.getElementById('mann-canvas') },
+  { who: 'tammy', side: 'L', slot: 'frau', canvas: document.getElementById('frau-canvas') },
+  { who: 'mann',  side: 'R', slot: 'mann', canvas: document.getElementById('mann-canvas') },
 ];
+
+// Pool wählbarer Personen (neue Gäste hier eintragen)
+const PEOPLE = ['frau', 'mann', 'tammy'];
+
+// gespeicherte Einstellungen (Personen + Positionen)
+const SETTINGS = (() => { try { return JSON.parse(localStorage.getItem('gothic-settings') || '{}'); } catch { return {}; } })();
+if (PEOPLE.includes(SETTINGS.left)) FIGS[0].who = SETTINGS.left;
+if (PEOPLE.includes(SETTINGS.right)) FIGS[1].who = SETTINGS.right;
+const pos = SETTINGS.pos || { frau: { x: 1, w: 48, y: 0 }, mann: { x: 0, w: 58, y: 0 } };
+function saveSettings() { try { localStorage.setItem('gothic-settings', JSON.stringify({ left: FIGS[0].who, right: FIGS[1].who, pos })); } catch {} }
 
 // ---- Chroma-Key: Grün -> transparent, mit Despill ----
 function keyDraw(src, ctx, w, h) {
@@ -42,17 +46,16 @@ function keyDraw(src, ctx, w, h) {
   const im = ctx.getImageData(0, 0, w, h), d = im.data;
   for (let i = 0; i < d.length; i += 4) {
     const r = d[i], g = d[i + 1], b = d[i + 2], avg = (r + b) / 2;
-    if (g > 90 && g > r * 1.3 && g > b * 1.3) d[i + 3] = 0;   // klar Gruen -> transparent
-    else if (g > avg) d[i + 1] = avg;                         // Despill: Gruen nie dominant (kein Gruenstich)
+    if (g > 90 && g > r * 1.3 && g > b * 1.3) d[i + 3] = 0;
+    else if (g > avg) d[i + 1] = avg;
   }
   ctx.putImageData(im, 0, 0);
 }
 
-// ---- Figuren + Clips vorbereiten ----
-for (const f of FIGS) {
-  f.ctx = f.canvas.getContext('2d', { willReadFrequently: true });
-  f.state = 'idle'; f.lastReact = 0; f.ready = false; f.active = null;
-  f.pending = null; f.pendingCount = 0;
+// ---- Figur laden (kann die Person zur Laufzeit wechseln) ----
+function loadFigure(f) {
+  f.state = 'idle'; f.lastReact = 0; f.ready = false; f.active = null; f.pending = null; f.pendingCount = 0;
+  f.ctx.clearRect(0, 0, f.canvas.width, f.canvas.height);
   f.img = new Image();
   f.img.onload = () => {
     f.canvas.width = f.img.naturalWidth || 1024;
@@ -61,12 +64,10 @@ for (const f of FIGS) {
     f.ready = true;
   };
   f.img.src = `assets/${f.who}-stern.png`;
-  // pro Emote ein Video (fehlt der Clip, wird dieser Emote für die Figur ignoriert)
   f.videos = {};
   for (const e of EMOTES) {
     const v = document.createElement('video');
-    v.muted = true; v.playsInline = true; v.preload = 'auto';
-    v.dataset.has = '0';
+    v.muted = true; v.playsInline = true; v.preload = 'auto'; v.dataset.has = '0';
     v.addEventListener('loadeddata', () => { v.dataset.has = '1'; });
     v.addEventListener('error', () => { v.dataset.has = '0'; });
     v.addEventListener('ended', () => endReact(f));
@@ -74,22 +75,19 @@ for (const f of FIGS) {
     f.videos[e.name] = v;
   }
 }
+for (const f of FIGS) { f.ctx = f.canvas.getContext('2d', { willReadFrequently: true }); loadFigure(f); }
 
 function react(f, emoteName) {
   if (f.state !== 'idle' || !f.ready) return;
   if (performance.now() - f.lastReact < CFG.cooldownMs) return;
   const v = f.videos[emoteName];
-  if (!v || v.dataset.has !== '1') return;      // Clip (noch) nicht da -> ignorieren
+  if (!v || v.dataset.has !== '1') return;
   f.state = 'reacting'; f.active = v; f.reactStart = performance.now();
   try { v.currentTime = 0; v.play().catch(() => {}); } catch {}
   try { hmpf.currentTime = 0; hmpf.play().catch(() => {}); } catch {}
 }
-function endReact(f) {
-  f.state = 'idle'; f.active = null; f.lastReact = performance.now();
-  keyDraw(f.img, f.ctx, f.canvas.width, f.canvas.height);
-}
+function endReact(f) { f.state = 'idle'; f.active = null; f.lastReact = performance.now(); keyDraw(f.img, f.ctx, f.canvas.width, f.canvas.height); }
 
-// ---- Render-Loop ----
 (function renderLoop() {
   for (const f of FIGS) {
     if (f.state !== 'reacting') continue;
@@ -99,10 +97,8 @@ function endReact(f) {
   requestAnimationFrame(renderLoop);
 })();
 
-// erkannte Grimasse (Priorität) aus Blendshapes
 function grimace(b) { for (const e of EMOTES) if (e.score(b) > e.th) return e.name; return null; }
 
-// Gesicht -> Figur (links=frau, rechts=mann)
 function mapFaces(perFace) {
   const left = FIGS.find(f => f.side === 'L'), right = FIGS.find(f => f.side === 'R');
   const sorted = [...perFace].sort((a, b) => a.x - b.x);
@@ -111,7 +107,6 @@ function mapFaces(perFace) {
   else if (sorted.length === 1) { map.set(sorted[0].x < 0.5 ? left : right, sorted[0]); }
   return map;
 }
-// Grimasse mit Hysterese auslösen
 function trigger(map) {
   for (const f of FIGS) {
     const face = map.get(f);
@@ -122,26 +117,21 @@ function trigger(map) {
 }
 
 function debug(t) { if (!statusEl.hidden) statusEl.textContent = t; }
-
-// Debug/Hilfe-Text: pro Figur erkannte Grimasse + jeder Emote-Wert in % vs. Schwelle.
-// Zum Kalibrieren: die th-Werte oben in EMOTES anpassen (0.25 = 25%).
 function debugText(map) {
   const lines = FIGS.map(f => {
     const face = map.get(f);
     const head = `${f.who.toUpperCase().padEnd(5)}[${f.state}]  erkannt: ${face && face.grimace ? face.grimace.toUpperCase() : '-'}`;
     if (!face) return head + '  (kein Gesicht)';
     const rows = EMOTES.map(e => {
-      const v = Math.round((face.scores[e.name] ?? 0) * 100);
-      const th = Math.round(e.th * 100);
+      const v = Math.round((face.scores[e.name] ?? 0) * 100), th = Math.round(e.th * 100);
       const mark = face.grimace === e.name ? '  <<< TRIGGER' : (v > th ? '  > ueber Schwelle' : '');
       return `   ${e.name.padEnd(7)} ${String(v).padStart(3)}%   (Schwelle ${String(th).padStart(3)}%)${mark}`;
     });
     return head + '\n' + rows.join('\n');
   });
-  return 'GRIMASSE -> CLIP:  Laecheln=d0(awkward)  Kussmund=d6(wild)  Zwinkern=d3  Boese=eigenes-Video   (links=Frau · rechts=Mann)\n' + lines.join('\n');
+  return 'GRIMASSE -> CLIP:  Laecheln=d0  Kussmund=d6  Zwinkern=d3  Boese=angry   (links/rechts = Figur)\n' + lines.join('\n');
 }
 
-// ---- Modus 1: MediaPipe (2 Gesichter + Grimassen) ----
 async function tryMediaPipe() {
   const url = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
   const { FaceLandmarker, FilesetResolver } = await import(`${url}/vision_bundle.mjs`);
@@ -159,16 +149,13 @@ async function tryMediaPipe() {
         const scores = {}; for (const e of EMOTES) scores[e.name] = e.score(b);
         return { x, grimace: grimace(b), scores };
       });
-      const map = mapFaces(perFace);
-      trigger(map);
-      debug(debugText(map));
+      const map = mapFaces(perFace); trigger(map); debug(debugText(map));
     }
     requestAnimationFrame(loop);
   };
   loop();
 }
 
-// ---- Modus 2: Bewegungs-Fallback (löst smile-Clip aus) ----
 let prevFrame = null;
 function startMotion() {
   const loop = () => {
@@ -185,11 +172,8 @@ function startMotion() {
   };
   loop();
 }
-
-// ---- Modus 3: Demo ----
 function startDemo() { const names = EMOTES.map(e => e.name); let i = 0; debug('Demo'); setInterval(() => { react(FIGS[i % 2], names[(i >> 1) % names.length]); i++; }, 2500); }
 
-// ---- Start ----
 async function begin() {
   startEl.classList.add('hidden');
   try { hmpf.play().then(() => { hmpf.pause(); hmpf.currentTime = 0; }).catch(() => {}); } catch {}
@@ -201,22 +185,56 @@ async function begin() {
 }
 startBtn.addEventListener('click', begin);
 
-// ---- Debug + Positions-Justierung ----
-const pos = { frau: { x: 1, w: 48, y: 0 }, mann: { x: 0, w: 58, y: 0 } };
-let posMode = false, sel = 0;
+// ---- Positionen (CSS-Variablen) ----
 function applyPos() {
   const r = document.documentElement.style;
   for (const w of ['frau', 'mann']) { r.setProperty(`--${w}-x`, pos[w].x + '%'); r.setProperty(`--${w}-w`, pos[w].w + '%'); r.setProperty(`--${w}-y`, pos[w].y + 'px'); }
 }
-addEventListener('keydown', (e) => {
-  if (e.key === 'd') { statusEl.hidden = !statusEl.hidden; return; }
-  if (e.key === 'p') { posMode = !posMode; if (posMode) sel = (sel + 1) % 2; statusEl.hidden = false; showPos(); return; }
-  if (!posMode) return;
-  const w = ['frau', 'mann'][sel]; const p = pos[w];
-  if (e.key === 'ArrowLeft') p.x -= 1; else if (e.key === 'ArrowRight') p.x += 1;
-  else if (e.key === 'ArrowUp') p.y -= 10; else if (e.key === 'ArrowDown') p.y += 10;
-  else if (e.key === '+' || e.key === '=') p.w += 1; else if (e.key === '-') p.w -= 1; else return;
-  e.preventDefault(); applyPos(); showPos();
-});
-function showPos() { const w = ['frau', 'mann'][sel]; const p = pos[w]; debug(`POSITION ${w} (p=wechseln) | x:${p.x}% w:${p.w}% y:${p.y}px\nCSS: --${w}-x:${p.x}%; --${w}-w:${p.w}%; --${w}-y:${p.y}px;`); }
 applyPos();
+
+// ---- Einstellungen-Panel: Personen-Auswahl + Drag&Drop-Positionierung ----
+const panel = document.getElementById('panel');
+const gear = document.getElementById('gear');
+const selLeft = document.getElementById('sel-left');
+const selRight = document.getElementById('sel-right');
+const editChk = document.getElementById('edit-chk');
+
+function fillSelect(sel, who) {
+  sel.innerHTML = PEOPLE.map(p => `<option value="${p}"${p === who ? ' selected' : ''}>${p}</option>`).join('');
+}
+fillSelect(selLeft, FIGS[0].who);
+fillSelect(selRight, FIGS[1].who);
+selLeft.addEventListener('change', () => { FIGS[0].who = selLeft.value; loadFigure(FIGS[0]); saveSettings(); });
+selRight.addEventListener('change', () => { FIGS[1].who = selRight.value; loadFigure(FIGS[1]); saveSettings(); });
+
+gear.addEventListener('click', () => { panel.hidden = !panel.hidden; });
+let editMode = false;
+editChk.addEventListener('change', () => { editMode = editChk.checked; stage.classList.toggle('editing', editMode); });
+
+// Drag & Mausrad pro Figur
+let drag = null;
+for (const f of FIGS) {
+  f.canvas.addEventListener('pointerdown', (e) => {
+    if (!editMode) return;
+    drag = { f, px: e.clientX, py: e.clientY, x0: pos[f.slot].x, y0: pos[f.slot].y };
+    f.canvas.setPointerCapture(e.pointerId); e.preventDefault();
+  });
+  f.canvas.addEventListener('wheel', (e) => {
+    if (!editMode) return; e.preventDefault();
+    pos[f.slot].w = Math.max(10, pos[f.slot].w + (e.deltaY < 0 ? 1 : -1));
+    applyPos(); saveSettings();
+  }, { passive: false });
+}
+addEventListener('pointermove', (e) => {
+  if (!drag) return;
+  const sw = stage.clientWidth || 1;
+  const dxPct = (e.clientX - drag.px) / sw * 100;
+  const p = pos[drag.f.slot];
+  p.x = Math.round(drag.x0 + (drag.f.slot === 'frau' ? dxPct : -dxPct));
+  p.y = Math.round(drag.y0 + (e.clientY - drag.py));
+  applyPos();
+});
+addEventListener('pointerup', () => { if (drag) { saveSettings(); drag = null; } });
+
+// Debug-Zeile mit "d"
+addEventListener('keydown', (e) => { if (e.key === 'd') statusEl.hidden = !statusEl.hidden; });
