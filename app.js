@@ -21,7 +21,7 @@ const CFG = {
 // Die Bewegung ist generisch (d0/d3/...), nicht die Grimasse selbst nachgeahmt,
 // aber jede Grimasse löst eine eigene Belebung aus.
 const EMOTES = [
-  { name: 'tongue', suffix: 'd3',  th: 0.25, score: b => b.tongueOut ?? 0 },
+  { name: 'cheeks', suffix: 'd3',  th: 0.40, score: b => b.cheekPuff ?? 0 },
   { name: 'shock',  suffix: 'd6',  th: 0.55, score: b => b.jawOpen ?? 0 },
   { name: 'brows',  suffix: 'd13', th: 0.45, score: b => b.browInnerUp ?? 0 },
   { name: 'smile',  suffix: 'd0',  th: 0.40, score: b => ((b.mouthSmileLeft ?? 0) + (b.mouthSmileRight ?? 0)) / 2 },
@@ -135,7 +135,7 @@ function debugText(map) {
     });
     return head + '\n' + rows.join('\n');
   });
-  return 'GRIMASSE -> CLIP:  Zunge=d3  MundAuf=d6  Brauen=d13  Laecheln=d0   (links=Frau · rechts=Mann)\n' + lines.join('\n');
+  return 'GRIMASSE -> CLIP:  Backen aufblasen=d3  Mund auf=d6  Brauen hoch=d13  Laecheln=d0   (links=Frau · rechts=Mann)\n' + lines.join('\n');
 }
 
 // ---- Modus 1: MediaPipe (2 Gesichter + Grimassen) ----
