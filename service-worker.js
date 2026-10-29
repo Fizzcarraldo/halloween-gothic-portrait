@@ -1,7 +1,7 @@
 // Service Worker: macht die App offline-fähig.
 // Beim ersten Online-Laden werden App-Shell + alle angeforderten Dateien gecacht
 // (auch Figuren-Clips und die MediaPipe-Gesichtserkennung von der CDN).
-const CACHE = 'gothic-v5';
+const CACHE = 'gothic-v6';
 const CORE = [
   './', './index.html', './app.js', './style.css',
   './manifest.json', './icon-192.png', './icon-512.png',

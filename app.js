@@ -139,22 +139,47 @@ async function tryMediaPipe() {
   const url = './assets/mediapipe'; // lokal gebuendelt -> Gesichtserkennung braucht nie Internet
   const { FaceLandmarker, FilesetResolver } = await import(`${url}/vision_bundle.mjs`);
   const fileset = await FilesetResolver.forVisionTasks(`${url}/wasm`);
-  const lm = await FaceLandmarker.createFromOptions(fileset, {
-    baseOptions: { modelAssetPath: `${url}/face_landmarker.task`, delegate: 'GPU' },
+  const opts = (delegate) => ({
+    baseOptions: { modelAssetPath: `${url}/face_landmarker.task`, delegate },
     outputFaceBlendshapes: true, runningMode: 'VIDEO', numFaces: 2,
   });
-  const loop = () => {
-    if (cam.readyState >= 2) {
-      const res = lm.detectForVideo(cam, performance.now());
-      const perFace = (res.faceLandmarks ?? []).map((landmarks, i) => {
-        const b = {}; for (const c of (res.faceBlendshapes?.[i]?.categories ?? [])) b[c.categoryName] = c.score;
-        const x = 1 - landmarks.reduce((s, p) => s + p.x, 0) / landmarks.length; // Kamera spiegeln (Selfie): links steuert links
-        const scores = {}; for (const e of EMOTES) scores[e.name] = e.score(b);
-        return { x, grimace: grimace(b), scores };
-      });
-      const map = mapFaces(perFace); trigger(map); debug(debugText(map));
+  let lm = await FaceLandmarker.createFromOptions(fileset, opts('GPU'));
+  let lastTs = 0, errStreak = 0, rebuilding = false;
+
+  // Erkennung neu aufbauen, falls der GPU-Kontext verloren geht (Tablet-Schlaf/Hintergrund).
+  // Erst wieder GPU, sonst CPU (langsamer, aber stabil) -> taut einen Dauerfreeze auf.
+  async function rebuild() {
+    if (rebuilding) return; rebuilding = true;
+    try { lm?.close?.(); } catch {}
+    lm = null;
+    for (const d of ['GPU', 'CPU']) {
+      try { lm = await FaceLandmarker.createFromOptions(fileset, opts(d)); break; }
+      catch (e) { console.warn('rebuild ' + d + ' fehlgeschlagen', e); }
     }
-    requestAnimationFrame(loop);
+    errStreak = 0; lastTs = 0; rebuilding = false;
+  }
+
+  const loop = () => {
+    try {
+      if (lm && cam.readyState >= 2) {
+        let ts = performance.now();
+        if (ts <= lastTs) ts = lastTs + 1; // MediaPipe verlangt streng steigende Zeitstempel, sonst wirft es
+        lastTs = ts;
+        const res = lm.detectForVideo(cam, ts);
+        const perFace = (res.faceLandmarks ?? []).map((landmarks, i) => {
+          const b = {}; for (const c of (res.faceBlendshapes?.[i]?.categories ?? [])) b[c.categoryName] = c.score;
+          const x = 1 - landmarks.reduce((s, p) => s + p.x, 0) / landmarks.length; // Kamera spiegeln (Selfie): links steuert links
+          const scores = {}; for (const e of EMOTES) scores[e.name] = e.score(b);
+          return { x, grimace: grimace(b), scores };
+        });
+        const map = mapFaces(perFace); trigger(map); debug(debugText(map));
+        errStreak = 0;
+      }
+    } catch (e) {
+      if (++errStreak === 1) console.warn('detect-Frame uebersprungen', e); // einzelner Fehler ist harmlos
+      if (errStreak >= 30 && !rebuilding) rebuild(); // ~0,5 s nur Fehler -> Erkennung neu aufbauen
+    }
+    requestAnimationFrame(loop); // laeuft immer weiter, auch nach einem Fehler
   };
   loop();
 }
