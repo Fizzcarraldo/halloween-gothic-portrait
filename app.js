@@ -36,7 +36,7 @@ const PEOPLE = ['frau', 'mann', 'tammy'];
 const SETTINGS = (() => { try { return JSON.parse(localStorage.getItem('gothic-settings') || '{}'); } catch { return {}; } })();
 if (PEOPLE.includes(SETTINGS.left)) FIGS[0].who = SETTINGS.left;
 if (PEOPLE.includes(SETTINGS.right)) FIGS[1].who = SETTINGS.right;
-const pos = SETTINGS.pos || { frau: { x: 1, w: 52, y: -70 }, mann: { x: 0, w: 58, y: 0 } };
+const pos = SETTINGS.pos || { frau: { x: 1, w: 52, y: 0 }, mann: { x: 0, w: 58, y: 0 } };
 function saveSettings() { try { localStorage.setItem('gothic-settings', JSON.stringify({ left: FIGS[0].who, right: FIGS[1].who, pos })); } catch {} }
 
 // ---- Chroma-Key: Grün -> transparent, mit Despill ----
@@ -199,17 +199,17 @@ const selLeft = document.getElementById('sel-left');
 const selRight = document.getElementById('sel-right');
 const editChk = document.getElementById('edit-chk');
 
+let editMode = false;
 function fillSelect(sel, who) {
+  if (!sel) return;
   sel.innerHTML = PEOPLE.map(p => `<option value="${p}"${p === who ? ' selected' : ''}>${p}</option>`).join('');
 }
 fillSelect(selLeft, FIGS[0].who);
 fillSelect(selRight, FIGS[1].who);
-selLeft.addEventListener('change', () => { FIGS[0].who = selLeft.value; loadFigure(FIGS[0]); saveSettings(); });
-selRight.addEventListener('change', () => { FIGS[1].who = selRight.value; loadFigure(FIGS[1]); saveSettings(); });
-
-gear.addEventListener('click', () => { panel.hidden = !panel.hidden; });
-let editMode = false;
-editChk.addEventListener('change', () => { editMode = editChk.checked; stage.classList.toggle('editing', editMode); });
+selLeft && selLeft.addEventListener('change', () => { FIGS[0].who = selLeft.value; loadFigure(FIGS[0]); saveSettings(); });
+selRight && selRight.addEventListener('change', () => { FIGS[1].who = selRight.value; loadFigure(FIGS[1]); saveSettings(); });
+gear && panel && gear.addEventListener('click', () => { panel.hidden = !panel.hidden; });
+editChk && editChk.addEventListener('change', () => { editMode = editChk.checked; stage.classList.toggle('editing', editMode); });
 
 // Drag & Mausrad pro Figur
 let drag = null;
