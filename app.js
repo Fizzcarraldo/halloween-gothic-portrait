@@ -15,6 +15,7 @@ const CFG = {
   framesTrigger: 4,    // so viele Grimassen-Frames am Stück -> Reaktion
   cooldownMs: 3500,    // Pause nach einer Reaktion
   motionTh: 16,        // Fallback-Bewegungsschwelle
+  maxReactMs: 2600,    // Reaktion nach dieser Zeit abschneiden (gegen zu lange Clips)
 };
 
 // Grimasse -> Clip-Suffix (= Treiber-Bewegung). Reihenfolge = Priorität.
@@ -77,7 +78,7 @@ function react(f, emoteName) {
   if (performance.now() - f.lastReact < CFG.cooldownMs) return;
   const v = f.videos[emoteName];
   if (!v || v.dataset.has !== '1') return;      // Clip (noch) nicht da -> ignorieren
-  f.state = 'reacting'; f.active = v;
+  f.state = 'reacting'; f.active = v; f.reactStart = performance.now();
   try { v.currentTime = 0; v.play().catch(() => {}); } catch {}
   try { hmpf.currentTime = 0; hmpf.play().catch(() => {}); } catch {}
 }
@@ -89,9 +90,9 @@ function endReact(f) {
 // ---- Render-Loop ----
 (function renderLoop() {
   for (const f of FIGS) {
-    if (f.state === 'reacting' && f.active && f.active.readyState >= 2) {
-      keyDraw(f.active, f.ctx, f.canvas.width, f.canvas.height);
-    }
+    if (f.state !== 'reacting') continue;
+    if (performance.now() - f.reactStart > CFG.maxReactMs) { try { f.active && f.active.pause(); } catch {} endReact(f); continue; }
+    if (f.active && f.active.readyState >= 2) keyDraw(f.active, f.ctx, f.canvas.width, f.canvas.height);
   }
   requestAnimationFrame(renderLoop);
 })();
