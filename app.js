@@ -136,11 +136,11 @@ function debugText(map) {
 }
 
 async function tryMediaPipe() {
-  const url = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+  const url = './assets/mediapipe'; // lokal gebuendelt -> Gesichtserkennung braucht nie Internet
   const { FaceLandmarker, FilesetResolver } = await import(`${url}/vision_bundle.mjs`);
   const fileset = await FilesetResolver.forVisionTasks(`${url}/wasm`);
   const lm = await FaceLandmarker.createFromOptions(fileset, {
-    baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task', delegate: 'GPU' },
+    baseOptions: { modelAssetPath: `${url}/face_landmarker.task`, delegate: 'GPU' },
     outputFaceBlendshapes: true, runningMode: 'VIDEO', numFaces: 2,
   });
   const loop = () => {
