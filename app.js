@@ -28,9 +28,11 @@ const EMOTES = [
   { name: 'smile', suffix: 'd0',  th: 0.40, score: b => ((b.mouthSmileLeft ?? 0) + (b.mouthSmileRight ?? 0)) / 2 }, // awkward Laecheln
 ];
 
+// who bestimmt alle Assets: assets/<who>-stern.png + assets/anim/<who>-stern--<clip>.mp4
+// Person tauschen = nur 'who' aendern (frau | mann | tammy | ...).
 const FIGS = [
-  { who: 'frau', side: 'L', canvas: document.getElementById('frau-canvas'), still: 'assets/frau-stern.png' },
-  { who: 'mann', side: 'R', canvas: document.getElementById('mann-canvas'), still: 'assets/mann-stern.png' },
+  { who: 'tammy', side: 'L', canvas: document.getElementById('frau-canvas') },
+  { who: 'mann',  side: 'R', canvas: document.getElementById('mann-canvas') },
 ];
 
 // ---- Chroma-Key: Grün -> transparent, mit Despill ----
@@ -58,7 +60,7 @@ for (const f of FIGS) {
     keyDraw(f.img, f.ctx, f.canvas.width, f.canvas.height);
     f.ready = true;
   };
-  f.img.src = f.still;
+  f.img.src = `assets/${f.who}-stern.png`;
   // pro Emote ein Video (fehlt der Clip, wird dieser Emote für die Figur ignoriert)
   f.videos = {};
   for (const e of EMOTES) {
