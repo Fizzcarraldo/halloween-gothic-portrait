@@ -38,6 +38,8 @@ const SETTINGS = (() => { try { return JSON.parse(localStorage.getItem('gothic-s
 if (PEOPLE.includes(SETTINGS.left)) FIGS[0].who = SETTINGS.left;
 if (PEOPLE.includes(SETTINGS.right)) FIGS[1].who = SETTINGS.right;
 const pos = SETTINGS.pos || { frau: { x: 1, w: 56, y: 0 }, mann: { x: 0, w: 58, y: 0 } };
+// y ist jetzt Prozent (auflösungsunabhängig); alte Pixel-Werte verwerfen
+for (const k of ['frau', 'mann']) { if (pos[k] && Math.abs(pos[k].y) > 40) pos[k].y = 0; }
 function saveSettings() { try { localStorage.setItem('gothic-settings', JSON.stringify({ left: FIGS[0].who, right: FIGS[1].who, pos })); } catch {} }
 
 // ---- Chroma-Key: Grün -> transparent, mit Despill ----
@@ -189,7 +191,7 @@ startBtn.addEventListener('click', begin);
 // ---- Positionen (CSS-Variablen) ----
 function applyPos() {
   const r = document.documentElement.style;
-  for (const w of ['frau', 'mann']) { r.setProperty(`--${w}-x`, pos[w].x + '%'); r.setProperty(`--${w}-w`, pos[w].w + '%'); r.setProperty(`--${w}-y`, pos[w].y + 'px'); }
+  for (const w of ['frau', 'mann']) { r.setProperty(`--${w}-x`, pos[w].x + '%'); r.setProperty(`--${w}-w`, pos[w].w + '%'); r.setProperty(`--${w}-y`, pos[w].y + '%'); }
 }
 applyPos();
 
@@ -246,10 +248,12 @@ addEventListener('pointermove', (e) => {
   }
   e.preventDefault();
   const sw = (painting && painting.clientWidth) || stage.clientWidth || 1;
+  const sh = (painting && painting.clientHeight) || sw;
   const dxPct = (e.clientX - drag.px) / sw * 100;
+  const dyPct = (e.clientY - drag.py) / sh * 100;
   const p = pos[drag.f.slot];
   p.x = Math.round(drag.x0 + (drag.f.slot === 'frau' ? dxPct : -dxPct));
-  p.y = Math.round(drag.y0 + (e.clientY - drag.py));
+  p.y = Math.round(drag.y0 - dyPct);   // bottom%: nach unten ziehen senkt die Figur
   applyPos();
 });
 addEventListener('pointerup', () => { if (drag) { if (drag.active) saveSettings(); drag = null; } });

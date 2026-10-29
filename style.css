@@ -3,8 +3,8 @@
   --gold-light: #e8c766;
   --dark: #0a0806;
   /* Figuren-Position/Größe (mit Taste p + Pfeiltasten justierbar) */
-  --frau-x: 1%;  --frau-w: 56%; --frau-y: 0px;
-  --mann-x: 0%;  --mann-w: 58%; --mann-y: 0px;
+  --frau-x: 1%;  --frau-w: 56%; --frau-y: 0%;
+  --mann-x: 0%;  --mann-w: 58%; --mann-y: 0%;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -41,8 +41,8 @@ html, body {
   height: auto;            /* Canvas ist 1:1, Höhe folgt der Breite */
   pointer-events: none;
 }
-.figure.frau { left: var(--frau-x);  width: var(--frau-w); transform: translateY(var(--frau-y)); z-index: 1; }
-.figure.mann { right: var(--mann-x); width: var(--mann-w); transform: translateY(var(--mann-y)); z-index: 2; }
+.figure.frau { left: var(--frau-x);  width: var(--frau-w); bottom: var(--frau-y); z-index: 1; }
+.figure.mann { right: var(--mann-x); width: var(--mann-w); bottom: var(--mann-y); z-index: 2; }
 
 .vignette {
   position: absolute; inset: 0; pointer-events: none;
@@ -95,6 +95,6 @@ html, body {
 
 /* ---- Swap-Animation: Figur faehrt rein/raus (im Positionier-Modus aus) ---- */
 .figure { transition: transform 0.45s ease; }
-.figure.frau { transform: translate(var(--frau-slide, 0%), var(--frau-y)); }
-.figure.mann { transform: translate(var(--mann-slide, 0%), var(--mann-y)); }
+.figure.frau { transform: translateX(var(--frau-slide, 0%)); }
+.figure.mann { transform: translateX(var(--mann-slide, 0%)); }
 .stage.editing .figure { transition: none; }
