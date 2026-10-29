@@ -41,9 +41,9 @@ function keyDraw(src, ctx, w, h) {
   ctx.drawImage(src, 0, 0, w, h);
   const im = ctx.getImageData(0, 0, w, h), d = im.data;
   for (let i = 0; i < d.length; i += 4) {
-    const r = d[i], g = d[i + 1], b = d[i + 2];
-    if (g > 90 && g > r * 1.35 && g > b * 1.35) d[i + 3] = 0;
-    else if (g > r * 1.12 && g > b * 1.12) d[i + 1] = Math.round((r + b) / 2);
+    const r = d[i], g = d[i + 1], b = d[i + 2], avg = (r + b) / 2;
+    if (g > 90 && g > r * 1.3 && g > b * 1.3) d[i + 3] = 0;   // klar Gruen -> transparent
+    else if (g > avg) d[i + 1] = avg;                         // Despill: Gruen nie dominant (kein Gruenstich)
   }
   ctx.putImageData(im, 0, 0);
 }
@@ -202,7 +202,7 @@ async function begin() {
 startBtn.addEventListener('click', begin);
 
 // ---- Debug + Positions-Justierung ----
-const pos = { frau: { x: 1, w: 56, y: 0 }, mann: { x: 0, w: 58, y: 0 } };
+const pos = { frau: { x: 1, w: 48, y: 0 }, mann: { x: 0, w: 58, y: 0 } };
 let posMode = false, sel = 0;
 function applyPos() {
   const r = document.documentElement.style;
