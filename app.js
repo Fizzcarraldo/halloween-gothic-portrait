@@ -225,11 +225,11 @@ editChk && editChk.addEventListener('change', () => { editMode = editChk.checked
 
 // Drag & Mausrad pro Figur
 let drag = null;
+const DRAG_START = 8; // px Totzone: ein Tipp/Klick verschiebt die Figur nicht, nur bewusstes Ziehen
 for (const f of FIGS) {
   f.canvas.addEventListener('pointerdown', (e) => {
     if (!editMode) return;
-    drag = { f, px: e.clientX, py: e.clientY, x0: pos[f.slot].x, y0: pos[f.slot].y };
-    f.canvas.setPointerCapture(e.pointerId); e.preventDefault();
+    drag = { f, px: e.clientX, py: e.clientY, x0: pos[f.slot].x, y0: pos[f.slot].y, active: false, pid: e.pointerId };
   });
   f.canvas.addEventListener('wheel', (e) => {
     if (!editMode) return; e.preventDefault();
@@ -239,6 +239,12 @@ for (const f of FIGS) {
 }
 addEventListener('pointermove', (e) => {
   if (!drag) return;
+  if (!drag.active) {
+    if (Math.hypot(e.clientX - drag.px, e.clientY - drag.py) < DRAG_START) return; // noch in der Totzone
+    drag.active = true;                       // jetzt wird es ein echter Zug
+    try { drag.f.canvas.setPointerCapture(drag.pid); } catch {}
+  }
+  e.preventDefault();
   const sw = (painting && painting.clientWidth) || stage.clientWidth || 1;
   const dxPct = (e.clientX - drag.px) / sw * 100;
   const p = pos[drag.f.slot];
@@ -246,7 +252,7 @@ addEventListener('pointermove', (e) => {
   p.y = Math.round(drag.y0 + (e.clientY - drag.py));
   applyPos();
 });
-addEventListener('pointerup', () => { if (drag) { saveSettings(); drag = null; } });
+addEventListener('pointerup', () => { if (drag) { if (drag.active) saveSettings(); drag = null; } });
 
 // Debug-Zeile mit "d"
 addEventListener('keydown', (e) => { if (e.key === 'd') statusEl.hidden = !statusEl.hidden; });
