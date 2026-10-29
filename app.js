@@ -22,10 +22,10 @@ const CFG = {
 // Die Bewegung ist generisch (d0/d3/...), nicht die Grimasse selbst nachgeahmt,
 // aber jede Grimasse löst eine eigene Belebung aus.
 const EMOTES = [
-  { name: 'cheeks', suffix: 'd3',  th: 0.40, score: b => b.cheekPuff ?? 0 },
-  { name: 'shock',  suffix: 'd6',  th: 0.55, score: b => b.jawOpen ?? 0 },
-  { name: 'brows',  suffix: 'd13', th: 0.45, score: b => b.browInnerUp ?? 0 },
-  { name: 'smile',  suffix: 'd0',  th: 0.40, score: b => ((b.mouthSmileLeft ?? 0) + (b.mouthSmileRight ?? 0)) / 2 },
+  { name: 'wink',  suffix: 'd3',  th: 0.40, score: b => { const l = b.eyeBlinkLeft ?? 0, r = b.eyeBlinkRight ?? 0; return Math.max(l, r) > 0.5 ? Math.abs(l - r) : 0; } }, // Zwinkern
+  { name: 'kiss',  suffix: 'd6',  th: 0.45, score: b => b.mouthPucker ?? 0 },                               // Kussmund -> wilde Grimasse
+  { name: 'angry', suffix: 'd13', th: 0.40, score: b => ((b.browDownLeft ?? 0) + (b.browDownRight ?? 0)) / 2 }, // Boese (d13 = Platzhalter bis echter boeser Clip)
+  { name: 'smile', suffix: 'd0',  th: 0.40, score: b => ((b.mouthSmileLeft ?? 0) + (b.mouthSmileRight ?? 0)) / 2 }, // awkward Laecheln
 ];
 
 const FIGS = [
@@ -136,7 +136,7 @@ function debugText(map) {
     });
     return head + '\n' + rows.join('\n');
   });
-  return 'GRIMASSE -> CLIP:  Backen aufblasen=d3  Mund auf=d6  Brauen hoch=d13  Laecheln=d0   (links=Frau · rechts=Mann)\n' + lines.join('\n');
+  return 'GRIMASSE -> CLIP:  Laecheln=d0(awkward)  Kussmund=d6(wild)  Zwinkern=d3  Boese=d13(Platzhalter)   (links=Frau · rechts=Mann)\n' + lines.join('\n');
 }
 
 // ---- Modus 1: MediaPipe (2 Gesichter + Grimassen) ----
