@@ -206,8 +206,19 @@ function fillSelect(sel, who) {
 }
 fillSelect(selLeft, FIGS[0].who);
 fillSelect(selRight, FIGS[1].who);
-selLeft && selLeft.addEventListener('change', () => { FIGS[0].who = selLeft.value; loadFigure(FIGS[0]); saveSettings(); });
-selRight && selRight.addEventListener('change', () => { FIGS[1].who = selRight.value; loadFigure(FIGS[1]); saveSettings(); });
+// Figur-Wechsel mit Slide: alte faehrt zur eigenen Seite raus, neue faehrt rein
+function swapFigure(f, newWho) {
+  if (f.who === newWho) return;
+  const out = f.slot === 'frau' ? '-150%' : '150%';
+  const root = document.documentElement.style;
+  root.setProperty(`--${f.slot}-slide`, out);                 // raus
+  setTimeout(() => {
+    f.who = newWho; loadFigure(f); saveSettings();            // Inhalt tauschen (ist ausserhalb)
+    requestAnimationFrame(() => root.setProperty(`--${f.slot}-slide`, '0%')); // rein
+  }, 480);
+}
+selLeft && selLeft.addEventListener('change', () => swapFigure(FIGS[0], selLeft.value));
+selRight && selRight.addEventListener('change', () => swapFigure(FIGS[1], selRight.value));
 gear && panel && gear.addEventListener('click', () => { panel.hidden = !panel.hidden; });
 editChk && editChk.addEventListener('change', () => { editMode = editChk.checked; stage.classList.toggle('editing', editMode); });
 

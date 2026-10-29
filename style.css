@@ -99,3 +99,9 @@ html, body {
 .panel select { font-family: inherit; padding: 2px 6px; background: #1c160d; color: var(--gold-light); border: 1px solid #6b5219; border-radius: 4px; }
 .panel .chk { max-width: 26ch; line-height: 1.3; }
 .stage.editing .figure { pointer-events: auto; cursor: move; outline: 2px dashed rgba(232,199,102,0.8); outline-offset: -2px; }
+
+/* ---- Swap-Animation: Figur faehrt rein/raus (im Positionier-Modus aus) ---- */
+.figure { transition: transform 0.45s ease; }
+.figure.frau { transform: translate(var(--frau-slide, 0%), var(--frau-y)); }
+.figure.mann { transform: translate(var(--mann-slide, 0%), var(--mann-y)); }
+.stage.editing .figure { transition: none; }
