@@ -145,7 +145,7 @@ async function tryMediaPipe() {
       const res = lm.detectForVideo(cam, performance.now());
       const perFace = (res.faceLandmarks ?? []).map((landmarks, i) => {
         const b = {}; for (const c of (res.faceBlendshapes?.[i]?.categories ?? [])) b[c.categoryName] = c.score;
-        const x = landmarks.reduce((s, p) => s + p.x, 0) / landmarks.length;
+        const x = 1 - landmarks.reduce((s, p) => s + p.x, 0) / landmarks.length; // Kamera spiegeln (Selfie): links steuert links
         const scores = {}; for (const e of EMOTES) scores[e.name] = e.score(b);
         return { x, grimace: grimace(b), scores };
       });
