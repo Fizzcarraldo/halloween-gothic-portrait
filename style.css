@@ -17,19 +17,12 @@ html, body {
   color: #c9b48a;
 }
 
-/* ---- Goldrahmen ---- */
-.frame {
-  position: absolute; inset: 0; margin: auto;
-  width: min(92vmin, 92vw);
-  aspect-ratio: 3 / 4;
-  padding: clamp(14px, 3vmin, 40px);
-  background: linear-gradient(135deg, var(--gold-light), var(--gold) 40%, #6b5219 60%, var(--gold) 80%, var(--gold-light));
-  border-radius: 6px;
-  box-shadow: 0 0 0 3px #3a2c0d, 0 30px 80px rgba(0,0,0,0.9), inset 0 0 18px rgba(0,0,0,0.6);
-}
+/* ---- Vollbild statt Rahmen ---- */
+.frame { position: absolute; inset: 0; background: #000; overflow: hidden; }
 
-/* ---- Bühne: Hintergrund + Figuren ---- */
-.stage { position: relative; width: 100%; height: 100%; background: #12100c; overflow: hidden; }
+/* ---- Bühne + deckende Gemälde-Ebene (füllt den Screen, Querformat) ---- */
+.stage { position: absolute; inset: 0; background: #000; overflow: hidden; }
+.painting { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 100vmax; height: 100vmax; }
 
 /* leicht nach Ölgemälde, gilt für Hintergrund und Figuren gleich -> blendet zusammen */
 .bg, .figure {

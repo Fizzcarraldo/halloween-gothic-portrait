@@ -13,11 +13,14 @@
   <!-- Goldrahmen mit geschichteter Bühne: Hintergrund + zwei Figuren-Ebenen -->
   <div class="frame">
     <div class="stage" id="stage">
-      <img class="bg" id="bg" src="assets/bg.jpg" alt="" />
-      <!-- Figuren: Green-Screen-PNGs werden per Canvas gekeyt und hier gezeichnet -->
-      <canvas class="figure frau" id="frau-canvas"></canvas>
-      <canvas class="figure mann" id="mann-canvas"></canvas>
-      <div class="vignette"></div>
+      <!-- Gemälde-Ebene: füllt den Screen (Querformat), Figuren skalieren mit -->
+      <div class="painting" id="painting">
+        <img class="bg" id="bg" src="assets/bg.jpg" alt="" />
+        <!-- Figuren: Green-Screen-PNGs werden per Canvas gekeyt und hier gezeichnet -->
+        <canvas class="figure frau" id="frau-canvas"></canvas>
+        <canvas class="figure mann" id="mann-canvas"></canvas>
+        <div class="vignette"></div>
+      </div>
     </div>
   </div>
 

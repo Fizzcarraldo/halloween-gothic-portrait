@@ -7,6 +7,7 @@ const startEl = document.getElementById('start');
 const startBtn = document.getElementById('startBtn');
 const statusEl = document.getElementById('status');
 const stage = document.getElementById('stage');
+const painting = document.getElementById('painting');
 const cam = document.getElementById('cam');
 const work = (() => { const c = document.createElement('canvas'); c.width = 160; c.height = 120; return c; })();
 const wctx = work.getContext('2d', { willReadFrequently: true });
@@ -238,7 +239,7 @@ for (const f of FIGS) {
 }
 addEventListener('pointermove', (e) => {
   if (!drag) return;
-  const sw = stage.clientWidth || 1;
+  const sw = (painting && painting.clientWidth) || stage.clientWidth || 1;
   const dxPct = (e.clientX - drag.px) / sw * 100;
   const p = pos[drag.f.slot];
   p.x = Math.round(drag.x0 + (drag.f.slot === 'frau' ? dxPct : -dxPct));
