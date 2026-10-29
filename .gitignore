@@ -3,4 +3,5 @@ image.png
 assets/_base.jpg
 generate*.mjs
 assets/anim/*_concat.mp4
+assets/anim/angry.mp4
 .DS_Store
